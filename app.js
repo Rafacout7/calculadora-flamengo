@@ -4,13 +4,12 @@ const buttons = document.querySelectorAll("button");
 
 let a = null;          // primeiro número
 let op = null;         // operador
-let waitingB = false;  // esperando o segundo número
+let waitingB = false;  // esperando o segundo número (ainda não começou a digitar)
 let current = "0";     // número atual digitado
 
 function updateDisplay() {
   if (a !== null && op !== null) {
-    // mostra "a op b" enquanto digita b
-    const bText = waitingB ? current : "";
+    const bText = waitingB ? "" : current; // mostra b quando está digitando
     expressionEl.textContent = `${format(a)} ${op} ${bText}`.trim();
   } else {
     expressionEl.textContent = "";
@@ -19,9 +18,7 @@ function updateDisplay() {
 }
 
 function format(n) {
-  // evita mostrar 8.0000000002
   const rounded = Math.round((n + Number.EPSILON) * 1e10) / 1e10;
-  // mostra inteiro sem .0
   return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 }
 
@@ -38,6 +35,12 @@ function clearAll() {
 }
 
 function backspace() {
+  if (current === "Erro") {
+    current = "0";
+    updateDisplay();
+    return;
+  }
+
   if (current.length <= 1 || (current.length === 2 && current.startsWith("-"))) {
     current = "0";
   } else {
@@ -47,14 +50,16 @@ function backspace() {
 }
 
 function toggleSign() {
+  if (current === "Erro") return;
   if (current === "0") return;
   current = current.startsWith("-") ? current.slice(1) : "-" + current;
   updateDisplay();
 }
 
 function appendDigit(d) {
+  if (current === "Erro") return;
+
   if (waitingB) {
-    // começando o segundo número
     current = d;
     waitingB = false;
   } else {
@@ -64,6 +69,8 @@ function appendDigit(d) {
 }
 
 function appendDot() {
+  if (current === "Erro") return;
+
   if (waitingB) {
     current = "0.";
     waitingB = false;
@@ -73,7 +80,38 @@ function appendDot() {
   updateDisplay();
 }
 
+// Regra % estilo calculadora de celular:
+// - se houver "a op b", ao apertar %, transforma b em percentual conforme op:
+//   + ou − : b = a * (b/100)
+//   × ou ÷ : b = b/100
+// - se não houver operador, transforma current em current/100
+function percent() {
+  if (current === "Erro") return;
+
+  const bRaw = toNumber(current);
+  let bAdj = bRaw;
+
+  if (a !== null && op !== null) {
+    if (op === "+" || op === "−") {
+      bAdj = a * (bRaw / 100);
+    } else if (op === "×" || op === "÷") {
+      bAdj = bRaw / 100;
+    } else {
+      bAdj = bRaw / 100;
+    }
+
+    current = format(bAdj);
+    waitingB = false; // já existe b
+  } else {
+    current = format(bRaw / 100);
+  }
+
+  updateDisplay();
+}
+
 function setOperator(nextOp) {
+  if (current === "Erro") return;
+
   const curNum = toNumber(current);
 
   if (a === null) {
@@ -85,7 +123,7 @@ function setOperator(nextOp) {
     return;
   }
 
-  // se já tinha operador e já digitou b, calcula antes de trocar operador
+  // Se já tinha operador e o usuário digitou b (waitingB=false), calcula antes
   if (op !== null && !waitingB) {
     const result = calculate(a, op, curNum);
     if (result === null) {
@@ -108,12 +146,12 @@ function calculate(x, operator, y) {
     case "−": return x - y;
     case "×": return x * y;
     case "÷": return y === 0 ? null : x / y;
-    case "%": return x % y;
     default: return null;
   }
 }
 
 function equals() {
+  if (current === "Erro") return;
   if (a === null || op === null) return;
 
   const b = toNumber(current);
@@ -123,7 +161,6 @@ function equals() {
     return;
   }
 
-  // no "=" mostrar só o resultado, e limpar expressão
   current = format(result);
   a = null;
   op = null;
@@ -152,8 +189,11 @@ buttons.forEach(btn => {
     if (t === "±") return toggleSign();
     if (t === "=") return equals();
 
-    // operadores: +, −, ×, ÷, %
-    if (["+", "−", "×", "÷", "%"].includes(t)) return setOperator(t);
+    // % agora é função (não operador)
+    if (t === "%") return percent();
+
+    // operadores: +, −, ×, ÷
+    if (["+", "−", "×", "÷"].includes(t)) return setOperator(t);
   });
 });
 
