@@ -28,14 +28,15 @@ body{
     box-shadow: 0 10px 30px rgba(0,0,0,.5);
 }
 
-.display{
-    padding: 14px;
-    background: var(--fla-black);
-    border-bottom: 2px solid var(--fla-red);
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.display {
+  padding: 14px;
+  background: var(--fla-black);
+  border-bottom: 2px solid var(--fla-red);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
 
 .logo{
     width: 36px;
@@ -44,12 +45,13 @@ body{
     flex-shrink: 0;
 }
 
-.display-text{
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.display-text {
+  color: #fff;
+  font-size: 32px;
+  font-weight: bold;
+  text-align: right;
 }
+
 
 
 #expression{
@@ -118,3 +120,4 @@ button.zero{
     #result{ font-size: 30px; }
     button{ height: 52px; }
 }
+
